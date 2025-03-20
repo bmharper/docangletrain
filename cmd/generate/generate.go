@@ -1,0 +1,148 @@
+package main
+
+import (
+	"fmt"
+	"math"
+	"math/rand/v2"
+	"os"
+	"path/filepath"
+
+	"github.com/bmharper/cimg/v2"
+	"github.com/tdewolff/canvas"
+	"github.com/tdewolff/canvas/renderers/rasterizer"
+)
+
+const ImageSize = 32
+const NumImages = 50
+const MinAngle = 0
+const MaxAngle = 180
+const AngleStep = 180
+
+func main() {
+	// Create new canvas of dimension 100x100 mm
+	//	c := canvas.New(100, 100)
+	//
+	//	// Create a canvas context used to keep drawing state
+	//	ctx := canvas.NewContext(c)
+	//
+	//	// Create a triangle path from an SVG path and draw it to the canvas
+	//	triangle, err := canvas.ParseSVGPath("L60 0L30 60z")
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	ctx.SetFillColor(canvas.Mediumseagreen)
+	//	ctx.DrawPath(20, 20, triangle)
+	//
+	//	// Rasterize the canvas and write to a PNG file with 3.2 dots-per-mm (320x320 px)
+	//	if err := renderers.Write("getting-started.png", c, canvas.DPMM(3.2)); err != nil {
+	//		panic(err)
+	//	}
+	g := generator{}
+	g.init()
+
+	for angle := MinAngle; angle <= MaxAngle; angle += AngleStep {
+		for i := 0; i < NumImages; i++ {
+			g.generate(i, angle)
+		}
+	}
+}
+
+type generator struct {
+	fonts []*canvas.FontFamily
+}
+
+func (g *generator) init() {
+	files, err := filepath.Glob("fonts/*.ttf")
+	if err != nil {
+		panic("Unable to find fonts: " + err.Error())
+	}
+	if len(files) == 0 {
+		panic("No font files found")
+	}
+	for _, file := range files {
+		font := canvas.NewFontFamily(filepath.Base(file))
+		if err := font.LoadFontFile(file, canvas.FontRegular); err != nil {
+			panic(err)
+		}
+		g.fonts = append(g.fonts, font)
+	}
+}
+
+func (g *generator) generate(seed, angle int) {
+	rng := rand.New(rand.NewPCG(uint64(seed), uint64(seed)))
+
+	c := canvas.New(ImageSize, ImageSize)
+	ctx := canvas.NewContext(c)
+
+	p := &canvas.Path{}
+	p.MoveTo(0, 0)
+	p.LineTo(ImageSize, 0)
+	p.LineTo(ImageSize, ImageSize)
+	p.LineTo(0, ImageSize)
+	p.Close()
+	ctx.SetFillColor(canvas.White)
+	ctx.DrawPath(0, 0, p)
+
+	//p = &canvas.Path{}
+	//p.MoveTo(10, 10)
+	//p.Arc(10, 10, 90, 0, 180)
+	//p.Close()
+	//ctx.SetFillColor(canvas.Red)
+	//ctx.DrawPath(5, 5, p)
+
+	font := g.fonts[rng.IntN(len(g.fonts))]
+	weight := canvas.FontRegular
+	wf := rng.Float64()
+	if wf <= 0.05 {
+		weight = canvas.FontLight
+	} else if wf <= 0.3 {
+		weight = canvas.FontExtraBold
+	} else if wf <= 0.7 {
+		weight = canvas.FontBold
+	} else {
+		weight = canvas.FontRegular
+	}
+	x := -10 + rng.Float64()*10.0
+	y := -30 + rng.Float64()*30.0
+	height := 30.0 + rng.Float64()*60.0
+	lineHeight := height*0.4 + height*rng.Float64()*0.3
+
+	face := font.Face(height, canvas.Black, weight, canvas.FontNormal)
+	for i := 0; i < 6; i++ {
+		ctx.DrawText(x, y, canvas.NewTextLine(face, g.word(rng), canvas.Left))
+		y += lineHeight
+	}
+
+	dir := fmt.Sprintf("images/%d", angle)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		panic(err)
+	}
+	fn := fmt.Sprintf("%v/%03d.jpg", dir, seed)
+	img := rasterizer.Draw(c, canvas.DPMM(4), canvas.DefaultColorSpace)
+	im, err := cimg.FromImage(img, true)
+	if err != nil {
+		panic(err)
+	}
+	downsize := cimg.ResizeNew(im, ImageSize, ImageSize, nil)
+	rotated := cimg.NewImage(downsize.Width, downsize.Height, downsize.Format)
+	cimg.Rotate(downsize, rotated, float64(angle)*math.Pi/180.0, nil)
+	if err := rotated.WriteJPEG(fn, cimg.MakeCompressParams(cimg.Sampling420, 95, 0), 0644); err != nil {
+		panic(err)
+	}
+}
+
+func (g *generator) word(rng *rand.Rand) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	digits := []rune("012345678901234567890123456789.,-_+()")
+	word := make([]rune, 0, 10)
+	if rng.IntN(10) <= 4 {
+		for i := 0; i < 20; i++ {
+			word = append(word, digits[rng.IntN(len(digits))])
+		}
+	} else {
+		for i := 0; i < 20; i++ {
+			word = append(word, letters[rng.IntN(len(letters))])
+		}
+	}
+	return string(word)
+}
