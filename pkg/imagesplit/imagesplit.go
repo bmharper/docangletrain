@@ -12,7 +12,7 @@ import "C"
 
 type tile struct {
 	img        *cimg.Image
-	perplexity int32
+	perplexity float32
 	//x          int32
 	//y          int32
 }
@@ -53,14 +53,17 @@ func SplitImage(img *cimg.Image, numTiles, size int) []*cimg.Image {
 			crop := img.ReferenceCrop(px, py, px+size, py+size)
 			tiles[y*nTilesX+x] = tile{
 				img:        crop,
-				perplexity: int32(C.horizontal_perplexity((*C.byte)(&crop.Pixels[0]), C.int(crop.Width), C.int(crop.Height), C.int(crop.Stride))),
-				//x:          int32(x),
-				//y:          int32(y),
+				perplexity: Perplexity(crop),
 			}
 		}
 	}
 	slices.SortFunc(tiles, func(i, j tile) int {
-		return int(j.perplexity - i.perplexity)
+		if i.perplexity < j.perplexity {
+			return 1
+		} else if i.perplexity > j.perplexity {
+			return -1
+		}
+		return 0
 	})
 	// Pick the top numTiles * 3 (by perplexity), and then shuffle them
 	tiles = tiles[:min(totalTiles, numTiles*3)]
@@ -69,12 +72,12 @@ func SplitImage(img *cimg.Image, numTiles, size int) []*cimg.Image {
 	})
 	samples := make([]*cimg.Image, numTiles)
 	for i := 0; i < numTiles; i++ {
-		tile := tiles[i]
-		//x := x1 + int(tile.x)*size
-		//y := y1 + int(tile.y)*size
-		//samples[i] = img.ReferenceCrop(x, y, x+size, y+size)
-		samples[i] = tile.img
+		samples[i] = tiles[i].img
 	}
 
 	return samples
+}
+
+func Perplexity(img *cimg.Image) float32 {
+	return float32(C.horizontal_perplexity((*C.byte)(&img.Pixels[0]), C.int(img.Width), C.int(img.Height), C.int(img.Stride)))
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/bmharper/cimg/v2"
+	"github.com/bmharper/docangletrain/pkg/imagesplit"
 	"github.com/tdewolff/canvas"
 	"github.com/tdewolff/canvas/renderers/rasterizer"
 )
@@ -41,8 +42,14 @@ func main() {
 	g.init()
 
 	for angle := MinAngle; angle <= MaxAngle; angle += AngleStep {
-		for i := 0; i < NumImages; i++ {
-			g.generate(i, angle)
+		nGenerated := 0
+		for i := 0; nGenerated < NumImages; i++ {
+			if g.generate(i, angle) {
+				nGenerated++
+			}
+			if i > NumImages*3 {
+				panic("Rejecting too many. Lower perplexity threshold")
+			}
 		}
 	}
 }
@@ -68,7 +75,7 @@ func (g *generator) init() {
 	}
 }
 
-func (g *generator) generate(seed, angle int) {
+func (g *generator) generate(seed, angle int) bool {
 	rng := rand.New(rand.NewPCG(uint64(seed), uint64(seed)))
 
 	c := canvas.New(ImageSize, ImageSize)
@@ -95,16 +102,16 @@ func (g *generator) generate(seed, angle int) {
 	wf := rng.Float64()
 	if wf <= 0.05 {
 		weight = canvas.FontLight
-	} else if wf <= 0.3 {
+	} else if wf <= 0.4 {
 		weight = canvas.FontExtraBold
-	} else if wf <= 0.7 {
+	} else if wf <= 0.8 {
 		weight = canvas.FontBold
 	} else {
 		weight = canvas.FontRegular
 	}
 	x := -10 + rng.Float64()*10.0
 	y := -30 + rng.Float64()*30.0
-	height := 30.0 + rng.Float64()*60.0
+	height := 40.0 + rng.Float64()*40.0
 	lineHeight := height*0.4 + height*rng.Float64()*0.3
 
 	face := font.Face(height, canvas.Black, weight, canvas.FontNormal)
@@ -124,11 +131,15 @@ func (g *generator) generate(seed, angle int) {
 		panic(err)
 	}
 	downsize := cimg.ResizeNew(im, ImageSize, ImageSize, nil)
+	if imagesplit.Perplexity(downsize) < 0.1 {
+		return false
+	}
 	rotated := cimg.NewImage(downsize.Width, downsize.Height, downsize.Format)
 	cimg.Rotate(downsize, rotated, float64(angle)*math.Pi/180.0, nil)
 	if err := rotated.WriteJPEG(fn, cimg.MakeCompressParams(cimg.Sampling420, 95, 0), 0644); err != nil {
 		panic(err)
 	}
+	return true
 }
 
 func (g *generator) word(rng *rand.Rand) string {

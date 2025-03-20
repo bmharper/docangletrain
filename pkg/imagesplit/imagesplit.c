@@ -1,6 +1,6 @@
 #include "imagesplit.h"
 
-int horizontal_perplexity(const byte* pixels, int width, int height, int stride) {
+float horizontal_perplexity(const byte* pixels, int width, int height, int stride) {
 	int perplexity = 0;
 
 	// Process each row independently
@@ -31,7 +31,7 @@ int horizontal_perplexity(const byte* pixels, int width, int height, int stride)
 			if (diff < 0)
 				diff = -diff; // Absolute difference
 
-			if (diff > 100) {
+			if (diff > 50) {
 				perplexity++;
 			}
 
@@ -39,5 +39,5 @@ int horizontal_perplexity(const byte* pixels, int width, int height, int stride)
 		}
 	}
 
-	return perplexity;
+	return (float) perplexity / (width * height);
 }
