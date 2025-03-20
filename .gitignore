@@ -1,2 +1,6 @@
 images/*
 samples/*
+wandb
+__pycache__
+*.pt
+*.pth

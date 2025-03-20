@@ -14,42 +14,43 @@ import (
 )
 
 const ImageSize = 32
-const NumImages = 50
+const NumTrain = 1000
+const NumVal = 100
 const MinAngle = 0
-const MaxAngle = 180
-const AngleStep = 180
+const MaxAngle = 270
+const AngleStep = 90
+const MinPerplexity = 0.1
 
 func main() {
-	// Create new canvas of dimension 100x100 mm
-	//	c := canvas.New(100, 100)
-	//
-	//	// Create a canvas context used to keep drawing state
-	//	ctx := canvas.NewContext(c)
-	//
-	//	// Create a triangle path from an SVG path and draw it to the canvas
-	//	triangle, err := canvas.ParseSVGPath("L60 0L30 60z")
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	ctx.SetFillColor(canvas.Mediumseagreen)
-	//	ctx.DrawPath(20, 20, triangle)
-	//
-	//	// Rasterize the canvas and write to a PNG file with 3.2 dots-per-mm (320x320 px)
-	//	if err := renderers.Write("getting-started.png", c, canvas.DPMM(3.2)); err != nil {
-	//		panic(err)
-	//	}
 	g := generator{}
 	g.init()
 
-	for angle := MinAngle; angle <= MaxAngle; angle += AngleStep {
-		nGenerated := 0
-		for i := 0; nGenerated < NumImages; i++ {
-			if g.generate(i, angle) {
-				nGenerated++
+	datasets := []string{"train", "val"}
+	numImages := []int{NumTrain, NumVal}
+	seed := 0
+
+	for ds := range datasets {
+		class := 0
+		for angle := MinAngle; angle <= MaxAngle; angle += AngleStep {
+			fmt.Printf("Generating %v %v %v\n", datasets[ds], class, angle)
+			dir := fmt.Sprintf("images/%v/%v", datasets[ds], class)
+			if err := os.RemoveAll(dir); err != nil {
+				panic(err)
 			}
-			if i > NumImages*3 {
-				panic("Rejecting too many. Lower perplexity threshold")
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				panic(err)
 			}
+			nGenerated := 0
+			for i := 0; nGenerated < numImages[ds]; i++ {
+				if g.generate(dir, seed, nGenerated, angle) {
+					nGenerated++
+				}
+				if i > numImages[ds]*3 {
+					panic("Rejecting too many. Lower perplexity threshold")
+				}
+				seed++
+			}
+			class++
 		}
 	}
 }
@@ -75,7 +76,14 @@ func (g *generator) init() {
 	}
 }
 
-func (g *generator) generate(seed, angle int) bool {
+func (g *generator) generate(outputDir string, seed, imageIdx, angle int) bool {
+	// The canvas library panics every now and then on invalid polygons (error: "next node for result polygon is nil, probably buggy intersection code")
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Error generating image %v: %v\n", imageIdx, r)
+		}
+	}()
+
 	rng := rand.New(rand.NewPCG(uint64(seed), uint64(seed)))
 
 	c := canvas.New(ImageSize, ImageSize)
@@ -120,18 +128,14 @@ func (g *generator) generate(seed, angle int) bool {
 		y += lineHeight
 	}
 
-	dir := fmt.Sprintf("images/%d", angle)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		panic(err)
-	}
-	fn := fmt.Sprintf("%v/%03d.jpg", dir, seed)
+	fn := fmt.Sprintf("%v/%03d.jpg", outputDir, imageIdx)
 	img := rasterizer.Draw(c, canvas.DPMM(4), canvas.DefaultColorSpace)
 	im, err := cimg.FromImage(img, true)
 	if err != nil {
 		panic(err)
 	}
 	downsize := cimg.ResizeNew(im, ImageSize, ImageSize, nil)
-	if imagesplit.Perplexity(downsize) < 0.1 {
+	if imagesplit.Perplexity(downsize) < MinPerplexity {
 		return false
 	}
 	rotated := cimg.NewImage(downsize.Width, downsize.Height, downsize.Format)
