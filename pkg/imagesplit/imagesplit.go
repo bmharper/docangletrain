@@ -70,6 +70,7 @@ func SplitImage(img *cimg.Image, numTiles, size int) []*cimg.Image {
 	prng.Shuffle(len(tiles), func(i, j int) {
 		tiles[i], tiles[j] = tiles[j], tiles[i]
 	})
+	// Finally, take a random sampling from the top 3x numTiles
 	samples := make([]*cimg.Image, numTiles)
 	for i := 0; i < numTiles; i++ {
 		samples[i] = tiles[i].img

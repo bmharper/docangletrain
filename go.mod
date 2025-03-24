@@ -28,9 +28,12 @@ require (
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/geo v0.0.0-20250319205625-69a8a986ba10 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/kolesa-team/go-webp v1.0.4 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/srwiley/scanx v0.0.0-20190309010443-e94503791388 // indirect
+	github.com/tdewolff/argp v0.0.0-20250320085902-4439d1422dc0 // indirect
 	github.com/tdewolff/font v0.0.0-20250314092958-e0eef3f68b08 // indirect
 	github.com/tdewolff/minify/v2 v2.22.2 // indirect
 	github.com/tdewolff/parse/v2 v2.7.21 // indirect
@@ -40,5 +43,6 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	gonum.org/v1/plot v0.15.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	star-tex.org/x/tex v0.5.0 // indirect
 )

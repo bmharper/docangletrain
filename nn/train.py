@@ -12,21 +12,20 @@ def get_data_loaders(batch_size):
     # Define transformations to preprocess the images
     transform = transforms.Compose([
         transforms.Grayscale(num_output_channels=1),  # Convert images to grayscale
-        transforms.Resize((32, 32)),  # Resize images to 32x32 pixels
+        #transforms.Resize((32, 32)),  # Resize images to 32x32 pixels (-- our images are already 32x32)
         transforms.ToTensor(),  # Convert images to tensors (scales to [0, 1])
     ])
 
-    # Load the training dataset
-    train_dataset = datasets.ImageFolder(
-        root='../images/train',  # Path to training images
-        transform=transform  # Apply the defined transformations
-    )
+    # Load the synthetic training and validation datasets
+    synth_train_dataset = datasets.ImageFolder(root='../images/synth/train', transform=transform)
+    synth_val_dataset = datasets.ImageFolder(root='../images/synth/val', transform=transform)
 
-    # Load the validation dataset
-    val_dataset = datasets.ImageFolder(
-        root='../images/val',  # Path to validation images
-        transform=transform  # Apply the same transformations
-    )
+    # Load the real training and validation datasets
+    real_train_dataset = datasets.ImageFolder(root='../images/real/train', transform=transform)
+    real_val_dataset = datasets.ImageFolder(root='../images/real/val', transform=transform)
+
+    train_dataset = torch.utils.data.ConcatDataset([synth_train_dataset, real_train_dataset])
+    val_dataset = torch.utils.data.ConcatDataset([synth_val_dataset, real_val_dataset])
 
     # Create the training data loader
     train_loader = DataLoader(
@@ -72,7 +71,7 @@ def train():
     #    patience=20  # Wait 5 epochs without improvement before reducing LR
     #    #verbose=True  # Print a message when LR is reduced
     #)
-    scheduler = lr_scheduler.OneCycleLR(optimizer=optimizer, max_lr=0.01, steps_per_epoch=len(train_loader), epochs=num_epochs, anneal_strategy='linear', cycle_momentum=False)
+    scheduler = lr_scheduler.OneCycleLR(optimizer=optimizer, max_lr=0.005, steps_per_epoch=len(train_loader), epochs=num_epochs, anneal_strategy='linear', cycle_momentum=False)
 
     run = wandb.init(entity="wefi", project="docangle", config={"learning_rate": learning_rate, "epochs": num_epochs, "batch_size": batch_size, "scheduler": "OneCycleLR"})
 

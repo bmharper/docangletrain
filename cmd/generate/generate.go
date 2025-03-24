@@ -13,6 +13,9 @@ import (
 	"github.com/tdewolff/canvas/renderers/rasterizer"
 )
 
+// Generate synthetic data by rendering text into a canvas at one of 4 different angles,
+// and writing out those little training images into jpegs.
+
 const ImageSize = 32
 const NumTrain = 1000
 const NumVal = 100
