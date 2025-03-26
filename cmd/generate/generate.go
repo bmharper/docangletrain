@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/bmharper/cimg/v2"
-	"github.com/bmharper/docangletrain/pkg/imagesplit"
+	"github.com/bmharper/textorient"
 	"github.com/tdewolff/canvas"
 	"github.com/tdewolff/canvas/renderers/rasterizer"
 )
@@ -138,7 +138,7 @@ func (g *generator) generate(outputDir string, seed, imageIdx, angle int) bool {
 		panic(err)
 	}
 	downsize := cimg.ResizeNew(im, ImageSize, ImageSize, nil)
-	if imagesplit.Perplexity(downsize) < MinPerplexity {
+	if textorient.Perplexity(downsize) < MinPerplexity {
 		return false
 	}
 	rotated := cimg.NewImage(downsize.Width, downsize.Height, downsize.Format)

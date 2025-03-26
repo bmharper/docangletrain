@@ -9,12 +9,13 @@ import (
 	"strings"
 
 	"github.com/bmharper/cimg/v2"
-	"github.com/bmharper/docangletrain/pkg/imagesplit"
+	"github.com/bmharper/textorient"
 	"github.com/tdewolff/argp"
 )
 
 // This program splits an image up into tiles and dumps them into jpg files.
 // We use this to visually inspect whether the training images look similar enough to the real world samples.
+// It's also used to generate training data in the `images/real` directory from real world upright images.
 
 func check(err error) {
 	if err != nil {
@@ -35,7 +36,7 @@ func main() {
 	cmd.Parse()
 	img, err := cimg.ReadFile(inputFilename)
 	check(err)
-	tiles := imagesplit.SplitImage(img, numTiles, tileSize)
+	tiles := textorient.SplitImage(img, numTiles, tileSize)
 	for angle := 0; angle < 4; angle++ {
 		rotated := []*cimg.Image{}
 		if angle == 0 {
