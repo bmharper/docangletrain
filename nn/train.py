@@ -47,7 +47,8 @@ def get_data_loaders(batch_size):
 def train():
     # Hyperparameters
     num_epochs = 500
-    learning_rate = 0.001
+    learning_rate = 0.001  # Irrelevant for OneCycleLR
+    one_cycle_max_lr = 0.01
     batch_size = 32
 
     # Set device (CUDA if available, else CPU)
@@ -71,9 +72,22 @@ def train():
     #    patience=20  # Wait 5 epochs without improvement before reducing LR
     #    #verbose=True  # Print a message when LR is reduced
     #)
-    scheduler = lr_scheduler.OneCycleLR(optimizer=optimizer, max_lr=0.005, steps_per_epoch=len(train_loader), epochs=num_epochs, anneal_strategy='linear', cycle_momentum=False)
+    scheduler = lr_scheduler.OneCycleLR(optimizer=optimizer,
+                                        max_lr=one_cycle_max_lr,
+                                        steps_per_epoch=len(train_loader),
+                                        epochs=num_epochs,
+                                        anneal_strategy='linear',
+                                        cycle_momentum=False)
 
-    run = wandb.init(entity="wefi", project="docangle", config={"learning_rate": learning_rate, "epochs": num_epochs, "batch_size": batch_size, "scheduler": "OneCycleLR"})
+    run = wandb.init(entity="wefi",
+                     project="docangle",
+                     config={
+                         "learning_rate": learning_rate,
+                         "max_learning_rate": one_cycle_max_lr,
+                         "epochs": num_epochs,
+                         "batch_size": batch_size,
+                         "scheduler": "OneCycleLR"
+                     })
 
     # Training loop
     for epoch in range(num_epochs):
