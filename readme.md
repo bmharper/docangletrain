@@ -19,6 +19,8 @@ CGO_CPPFLAGS="-I$(pwd)/ncnn/src -I$(pwd)/ncnn/build/src" CGO_LDFLAGS=-L$(pwd)/nc
 # Train the neural network
 cd nn
 python train.py
+
+# Export to NCNN
 pnnx text_angle_classifier.pt inputshape=[1,1,32,32]
 ```
 
